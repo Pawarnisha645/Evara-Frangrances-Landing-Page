@@ -1,0 +1,180 @@
+import React, { useState, useEffect } from 'react';
+import 'tailwindcss/tailwind.css';
+import { Tabs, TabList, Tab, TabPanel } from 'react-tabs';
+import 'react-tabs/style/react-tabs.css';
+import { motion } from 'framer-motion';
+
+// Ensure in your global CSS or Tailwind base styles:
+// @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+// .font-cursive { font-family: 'Great Vibes', cursive; }
+
+const EvaraLandingPage = () => {
+  const [posts, setPosts] = useState([]);
+  const [videos, setVideos] = useState([]);
+  const [reviews, setReviews] = useState([]);
+
+  useEffect(() => {
+    // Fetch Instagram media
+    const fetchMedia = async () => {
+      const accessToken = 'YOUR_INSTAGRAM_ACCESS_TOKEN';
+      const userId = 'YOUR_INSTAGRAM_USER_ID';
+      try {
+        const res = await fetch(
+          `https://graph.instagram.com/${userId}/media?fields=id,caption,media_url,permalink,media_type&access_token=${accessToken}`
+        );
+        const data = await res.json();
+        const all = data.data;
+        setPosts(all.filter(item => item.media_type === 'IMAGE'));
+        setVideos(all.filter(item => item.media_type === 'VIDEO'));
+      } catch (err) {
+        console.error('Error fetching Instagram media:', err);
+      }
+    };
+    fetchMedia();
+  }, []);
+
+  useEffect(() => {
+    // Fetch customer reviews from API
+    const fetchReviews = async () => {
+      try {
+        const res = await fetch('/api/reviews');
+        const data = await res.json();
+        setReviews(data);
+      } catch (err) {
+        console.error('Error fetching reviews:', err);
+      }
+    };
+    fetchReviews();
+  }, []);
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    const email = e.target.email.value;
+    try {
+      // POST to your Mailchimp/ConvertKit integration endpoint
+      await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      alert('Thanks for subscribing!');
+      e.target.reset();
+    } catch (err) {
+      console.error('Subscription error:', err);
+      alert('Subscription failed. Please try again.');
+    }
+  };
+
+  const shopAll = posts;
+  const bestSellers = posts.filter(p => p.caption?.toLowerCase().includes('#bestseller'));
+  const giftHampers = posts.filter(p => p.caption?.toLowerCase().includes('#gifthamper'));
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }} className="min-h-screen bg-white font-sans">
+      {/* Header */}
+      <motion.header initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="py-16 text-center bg-fixed bg-cover relative" style={{ backgroundImage: 'url("/path/to/hero-background.jpg")' }}>
+        <div className="absolute inset-0 bg-pink-200 opacity-50"></div>
+        <div className="relative z-10">
+          <h1 className="text-6xl md:text-8xl font-cursive text-white mb-4">Evara Fragrances</h1>
+          <p className="text-2xl md:text-3xl text-white italic">Ignite your space with elegance.</p>
+        </div>
+      </motion.header>
+
+      {/* Products Tabs */}
+      <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.2 }} className="py-16 px-6 max-w-6xl mx-auto">
+        <Tabs>
+          <TabList className="flex justify-center space-x-12 mb-12 text-xl font-medium">
+            {["Shop All Candles", "Best Seller Candles", "Gift Hamper"].map((label, i) => (
+              <Tab key={i} className="cursor-pointer px-4 py-2 hover:text-pink-600 focus:outline-none">
+                {label}
+              </Tab>
+            ))}
+          </TabList>
+          <TabPanel>
+            <ProductGrid posts={shopAll} />
+          </TabPanel>
+          <TabPanel>
+            <ProductGrid posts={bestSellers} />
+          </TabPanel>
+          <TabPanel>
+            <ProductGrid posts={giftHampers} />
+          </TabPanel>
+        </Tabs>
+      </motion.section>
+
+      {/* Video Gallery */}
+      <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.4 }} className="py-16 bg-pink-50 px-6">
+        <h2 className="text-4xl text-center font-semibold text-pink-600 mb-10">Our Moments in Motion</h2>
+        <motion.div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {videos.map((vid) => (
+            <motion.a key={vid.id} href={vid.permalink} target="_blank" rel="noopener noreferrer" className="block rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition" whileHover={{ scale: 1.05 }}>
+              <video controls className="w-full h-64 object-cover">
+                <source src={vid.media_url} type="video/mp4" />
+              </video>
+            </motion.a>
+          ))}
+        </motion.div>
+      </motion.section>
+
+      {/* Newsletter */}
+      <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.6 }} className="py-16 px-6">
+        <div className="max-w-md mx-auto text-center">
+          <h2 className="text-3xl font-semibold text-pink-600 mb-4">Join Our Fragrance Family</h2>
+          <p className="mb-6 text-gray-700">Sign up for exclusive offers, new launches, and more.</p>
+          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-4">
+            <input name="email" type="email" placeholder="Your email address" required className="flex-1 p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400" />
+            <button type="submit" className="p-4 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition">
+              Subscribe
+            </button>
+          </form>
+        </div>
+      </motion.section>
+
+      {/* Customer Reviews */}
+      <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.8 }} className="py-16 bg-gray-100 px-6">
+        <h2 className="text-4xl text-center font-semibold text-pink-600 mb-10">What Our Customers Say</h2>
+        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+          {reviews.length > 0 ? (
+            reviews.map((rev, i) => (
+              <motion.div key={i} className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition" whileHover={{ scale: 1.02 }}>
+                <p className="italic mb-4">"{rev.comment}"</p>
+                <p className="font-semibold">— {rev.user}</p>
+              </motion.div>
+            ))
+          ) : (
+            <p className="text-center text-gray-500 col-span-full">No reviews yet. Be the first to share your experience!</p>
+          )}
+        </div>
+      </motion.section>
+
+      {/* Footer / Contact */}
+      <footer className="bg-white py-8 px-4 text-center">
+        <p className="text-lg font-semibold">Shivani Jangle</p>
+        <p className="mt-1 text-gray-600">+91 9423859221</p>
+        <p className="mt-1 text-gray-600">India</p>
+      </footer>
+    </motion.div>
+  );
+};
+
+const ProductGrid = ({ posts }) => (
+  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+    {posts.map((post) => (
+      <motion.a key={post.id} href={post.permalink} target="_blank" rel="noopener noreferrer" className="block bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition" whileHover={{ scale: 1.03 }}>
+        <img src={post.media_url} alt={extractTitle(post.caption)} className="w-full h-64 object-cover" />
+        <div className="p-6">
+          <p className="font-semibold text-xl text-pink-600">{extractTitle(post.caption)}</p>
+          <p className="text-gray-600 text-sm mt-2 line-clamp-3">{post.caption}</p>
+        </div>
+      </motion.a>
+    ))}
+  </motion.div>
+);
+
+const extractTitle = (caption) => {
+  if (!caption) return '';
+  const title = caption.split('\n')[0];
+  return title.length > 30 ? `${title.slice(0, 30)}...` : title;
+};
+
+export default EvaraLandingPage;
